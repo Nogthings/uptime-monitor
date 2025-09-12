@@ -35,9 +35,12 @@ func NewServer(db *pgxpool.Pool) *Server {
 		// Add a test route to verify that it works
 		apiRoutes.GET("/me", server.getMe)
 
-		// Future service routes (CRUD) will go here
-		// apiRoutes.GET("/services", server.getServices)
-		// apiRoutes.POST("/services", server.createService)
+		// Service routes
+		apiRoutes.POST("/services", server.createService)
+		apiRoutes.GET("/services", server.getServices)
+		// apiRoutes.GET("/services/:id", server.getService)
+		// apiRoutes.PUT("/services/:id", server.updateService)
+		apiRoutes.DELETE("/services/:id", server.deleteService)
 	}
 
 	server.router = router
