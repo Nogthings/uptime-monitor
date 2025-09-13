@@ -1,0 +1,63 @@
+{{ define "content" }}
+<div class="min-h-screen bg-slate-100">
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center font-bold text-xl text-sky-600">
+                        Uptime Monitor
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="/logout" class="px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-100">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-slate-900">Dashboard</h1>
+                <a href="/services/new" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700">Add Service</a>
+            </div>
+
+            <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <ul role="list" class="divide-y divide-slate-200">
+                    {{ range .Services }}
+                    <li>
+                        <a href="/services/{{ .ID }}" class="block hover:bg-slate-50">
+                            <div class="p-4 sm:p-6">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-base font-medium text-sky-600 truncate">{{ .Name }}</p>
+                                    <!-- Logic for status will be added later -->
+                                    <div class="ml-2 flex-shrink-0 flex">
+                                        <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            Up
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="mt-2 sm:flex sm:justify-between">
+                                    <div class="sm:flex">
+                                        <p class="flex items-center text-sm text-slate-500">
+                                            {{ .Target }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                    {{ else }}
+                    <li>
+                        <div class="text-center p-12">
+                            <h3 class="mt-2 text-sm font-medium text-slate-900">No services</h3>
+                            <p class="mt-1 text-sm text-slate-500">Get started by adding a new service to monitor.</p>
+                        </div>
+                    </li>
+                    {{ end }}
+                </ul>
+            </div>
+        </div>
+    </main>
+</div>
+{{ end }}

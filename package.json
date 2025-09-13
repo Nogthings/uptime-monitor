@@ -1,0 +1,28 @@
+{
+  "name": "uptime-monitor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "css:build": "npx tailwindcss@next -i ./internal/web/assets/css/input.css -o ./public/css/style.css",
+    "css:watch": "npm run css:build -- --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nogthings/uptime-monitor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Nogthings/uptime-monitor/issues"
+  },
+  "homepage": "https://github.com/Nogthings/uptime-monitor#readme",
+  "devDependencies": {
+    "tailwindcss": "^4.0.0"
+  }
+}

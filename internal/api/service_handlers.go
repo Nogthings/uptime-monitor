@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
-	"uptime-monitor/internal/models"
+	"uptime-monitor/internal/database/db"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,19 +25,14 @@ func (s *Server) createService(c *gin.Context) {
 
 	userID := c.GetInt64("userID")
 
-	service := models.Service{
+	params := db.CreateServiceParams{
 		UserID:               userID,
 		Name:                 input.Name,
 		Target:               input.Target,
 		CheckIntervalSeconds: int64(input.CheckIntervalSeconds),
 	}
 
-	query := `INSERT INTO services (user_id, name, target, check_interval_seconds)
-             VALUES ($1, $2, $3, $4)
-             RETURNING id, created_at`
-	err := s.db.QueryRow(context.Background(), query, service.UserID, service.Name, service.Target, service.CheckIntervalSeconds).
-		Scan(&service.ID, &service.CreatedAt)
-
+	service, err := s.q.CreateService(context.Background(), params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create service"})
 		return
@@ -50,23 +45,15 @@ func (s *Server) createService(c *gin.Context) {
 func (s *Server) getServices(c *gin.Context) {
 	userID := c.GetInt64("userID")
 
-	query := `SELECT id, name, target, check_interval_seconds, created_at
-             FROM services WHERE user_id = $1 ORDER BY created_at DESC`
-	rows, err := s.db.Query(context.Background(), query, userID)
+	services, err := s.q.GetServicesForUser(context.Background(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve services"})
 		return
 	}
-	defer rows.Close()
 
-	services := []models.Service{}
-	for rows.Next() {
-		var service models.Service
-		if err := rows.Scan(&service.ID, &service.Name, &service.Target, &service.CheckIntervalSeconds, &service.CreatedAt); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan service data"})
-			return
-		}
-		services = append(services, service)
+	// Return an empty slice if no services are found, instead of null
+	if services == nil {
+		services = []db.Service{}
 	}
 
 	c.JSON(http.StatusOK, services)
@@ -83,19 +70,52 @@ func (s *Server) deleteService(c *gin.Context) {
 
 	userID := c.GetInt64("userID")
 
-	// Ensure the service belongs to the user
-	query := `DELETE FROM services WHERE id = $1 AND user_id = $2`
-	cmdTag, err := s.db.Exec(context.Background(), query, serviceID, userID)
+	params := db.DeleteServiceParams{
+		ID:     serviceID,
+		UserID: userID,
+	}
+
+	rowsAffected, err := s.q.DeleteService(context.Background(), params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete service"})
 		return
 	}
 
-	// Check if any rows were affected
-	if cmdTag.RowsAffected() == 0 {
+	if rowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Service not found or you do not have permission to delete it"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Service deleted successfully"})
+}
+
+// getServiceStatusHistory retrieves the latest status checks for a specific service.
+func (s *Server) getServiceStatusHistory(c *gin.Context) {
+	idParam := c.Param("id")
+	serviceID, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid service ID"})
+		return
+	}
+
+	userID := c.GetInt64("userID")
+
+	params := db.GetStatusChecksForServiceParams{
+		ServiceID: serviceID,
+		UserID:    userID, // Ensures the user owns the service
+	}
+
+	statusChecks, err := s.q.GetStatusChecksForService(context.Background(), params)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve status history"})
+		return
+	}
+
+	// If the query returns no rows, it might be because the service doesn't exist
+	// or doesn't belong to the user. We return an empty slice for simplicity.
+	if statusChecks == nil {
+		statusChecks = []db.StatusCheck{}
+	}
+
+	c.JSON(http.StatusOK, statusChecks)
 }

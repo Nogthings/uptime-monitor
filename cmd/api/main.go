@@ -5,6 +5,7 @@ import (
 	"uptime-monitor/internal/api"
 	"uptime-monitor/internal/config"
 	"uptime-monitor/internal/database"
+	"uptime-monitor/internal/monitoring"
 )
 
 func main() {
@@ -22,10 +23,14 @@ func main() {
 	defer dbPool.Close()
 	log.Println("INFO: Database connection successful")
 
-	// 3. Start the API server
-	server := api.NewServer(dbPool)
+	// 3. Start the monitoring worker in the background
+	log.Println("INFO: Initializing monitoring worker...")
+	monitor := monitoring.NewMonitor(dbPool)
+	go monitor.Start() // Starts the worker in a new goroutine
 
-	log.Printf("INFO: Starting API server on port %s", cfg.ServerAddress)
+	// 4. Start the API server (this is a blocking call)
+	server := api.NewServer(dbPool)
+	log.Printf("INFO: Starting API server on %s", cfg.ServerAddress)
 	if err := server.Start(cfg.ServerAddress); err != nil {
 		log.Fatalf("FATAL: could not start server: %v", err)
 	}
